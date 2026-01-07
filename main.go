@@ -1,226 +1,101 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"embed"
+	"io/fs"
 	"log"
-	"runtime"
-	"time"
 
 	webview "github.com/webview/webview_go"
+
+	"storyboard_flow/internal/app"
+	"storyboard_flow/internal/ui"
 )
 
-const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebView Demo</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f5f5f5;
-            color: #333;
-            padding: 40px 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border: 1px solid #ddd;
-        }
-        
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #222;
-        }
-        
-        .section {
-            margin-bottom: 30px;
-        }
-        
-        .section h2 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: #444;
-        }
-        
-        button {
-            background: white;
-            border: 1px solid #999;
-            padding: 8px 16px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            font-family: inherit;
-        }
-        
-        button:hover {
-            background: #f0f0f0;
-        }
-        
-        button:active {
-            background: #e0e0e0;
-        }
-        
-        input {
-            border: 1px solid #999;
-            padding: 8px 12px;
-            font-size: 14px;
-            width: 80px;
-            margin-right: 8px;
-            font-family: inherit;
-        }
-        
-        .result {
-            margin-top: 12px;
-            padding: 12px;
-            background: #fafafa;
-            border: 1px solid #e0e0e0;
-            font-size: 14px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        .result:empty {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>WebView Demo</h1>
-        
-        <div class="section">
-            <h2>System Information</h2>
-            <button onclick="handleGetSystemInfo()">Get System Info</button>
-            <div id="systemInfo" class="result"></div>
-        </div>
-        
-        <div class="section">
-            <h2>Calculator</h2>
-            <input type="number" id="num1" value="10" />
-            <span>+</span>
-            <input type="number" id="num2" value="20" />
-            <button onclick="handleCalculate()">Calculate</button>
-            <div id="calcResult" class="result"></div>
-        </div>
-        
-        <div class="section">
-            <h2>Backend Messages</h2>
-            <button onclick="handleRequestMessage()">Request Message</button>
-            <div id="messageResult" class="result"></div>
-        </div>
-    </div>
-    
-    <script>
-        function handleGetSystemInfo() {
-            const result = document.getElementById('systemInfo');
-            result.textContent = 'Loading...';
-            
-            getSystemInfo().then(info => {
-                result.textContent = info;
-            }).catch(err => {
-                result.textContent = 'Error: ' + err;
-            });
-        }
-        
-        function handleCalculate() {
-            const num1 = parseFloat(document.getElementById('num1').value) || 0;
-            const num2 = parseFloat(document.getElementById('num2').value) || 0;
-            const result = document.getElementById('calcResult');
-            
-            result.textContent = 'Calculating...';
-            
-            calculate(num1, num2).then(sum => {
-                result.textContent = num1 + ' + ' + num2 + ' = ' + sum;
-            }).catch(err => {
-                result.textContent = 'Error: ' + err;
-            });
-        }
-        
-        function handleRequestMessage() {
-            const result = document.getElementById('messageResult');
-            result.textContent = 'Requesting...';
-            
-            getMessage().then(msg => {
-                result.textContent = msg;
-            }).catch(err => {
-                result.textContent = 'Error: ' + err;
-            });
-        }
-    </script>
-</body>
-</html>
-`
-
-type SystemInfo struct {
-	OS           string `json:"os"`
-	Architecture string `json:"arch"`
-	CPUs         int    `json:"cpus"`
-	GoVersion    string `json:"goVersion"`
-	Timestamp    string `json:"timestamp"`
-}
+//go:embed web
+var webFS embed.FS
 
 func main() {
+	// Create application state
+	state := app.NewState()
+
+	// Create handlers
+	handlers := ui.NewHandlers(state)
+
+	// Create webview
 	debug := true
 	w := webview.New(debug)
 	defer w.Destroy()
 
-	w.SetTitle("WebView Demo")
-	w.SetSize(800, 600, webview.HintNone)
+	w.SetTitle("Storyboard Flow")
+	w.SetSize(1400, 900, webview.HintNone)
 
 	// Bind Go functions to JavaScript
-	w.Bind("getSystemInfo", func() string {
-		info := SystemInfo{
-			OS:           runtime.GOOS,
-			Architecture: runtime.GOARCH,
-			CPUs:         runtime.NumCPU(),
-			GoVersion:    runtime.Version(),
-			Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
-		}
+	w.Bind("createNewProject", handlers.CreateNewProject)
+	w.Bind("createPanel", handlers.CreatePanel)
+	w.Bind("getPanels", handlers.GetPanels)
+	w.Bind("updatePanel", handlers.UpdatePanel)
+	w.Bind("deletePanel", handlers.DeletePanel)
+	w.Bind("saveProject", handlers.SaveProject)
+	w.Bind("loadProject", handlers.LoadProject)
 
-		data, err := json.MarshalIndent(info, "", "  ")
-		if err != nil {
-			return fmt.Sprintf("Error: %v", err)
-		}
-		return string(data)
-	})
+	// Load HTML from embedded filesystem
+	log.Println("Loading web assets...")
+	
+	htmlBytes, err := fs.ReadFile(webFS, "web/index.html")
+	if err != nil {
+		log.Fatal("Failed to read index.html:", err)
+	}
+	log.Printf("Loaded index.html: %d bytes\n", len(htmlBytes))
 
-	w.Bind("calculate", func(a, b float64) float64 {
-		// Simulate some processing time
-		time.Sleep(100 * time.Millisecond)
-		return a + b
-	})
+	cssBytes, err := fs.ReadFile(webFS, "web/css/styles.css")
+	if err != nil {
+		log.Fatal("Failed to read styles.css:", err)
+	}
+	log.Printf("Loaded styles.css: %d bytes\n", len(cssBytes))
 
-	w.Bind("getMessage", func() string {
-		messages := []string{
-			"Hello from Go backend!",
-			"WebView integration is working!",
-			"This message was generated at " + time.Now().Format("15:04:05"),
-			"Go and JavaScript are communicating successfully.",
-		}
-		// Return a random message based on current second
-		idx := time.Now().Second() % len(messages)
-		return messages[idx]
-	})
+	appJSBytes, err := fs.ReadFile(webFS, "web/js/app.js")
+	if err != nil {
+		log.Fatal("Failed to read app.js:", err)
+	}
+	log.Printf("Loaded app.js: %d bytes\n", len(appJSBytes))
 
-	w.SetHtml(htmlContent)
+	panelsJSBytes, err := fs.ReadFile(webFS, "web/js/panels.js")
+	if err != nil {
+		log.Fatal("Failed to read panels.js:", err)
+	}
+	log.Printf("Loaded panels.js: %d bytes\n", len(panelsJSBytes))
+
+	// Inject CSS and JS into HTML
+	html := string(htmlBytes)
+	html = injectAssets(html, string(cssBytes), string(appJSBytes), string(panelsJSBytes))
+	
+	log.Printf("Final HTML length: %d bytes\n", len(html))
+	log.Println("Setting HTML content...")
+
+	w.SetHtml(html)
 	w.Run()
 
 	log.Println("WebView closed")
+}
+
+func injectAssets(html, css, appJS, panelsJS string) string {
+	// Replace link and script tags with inline content
+	html = replaceTag(html, `<link rel="stylesheet" href="css/styles.css">`, `<style>`+css+`</style>`)
+	html = replaceTag(html, `<script src="js/app.js"></script>`, `<script>`+appJS+`</script>`)
+	html = replaceTag(html, `<script src="js/panels.js"></script>`, `<script>`+panelsJS+`</script>`)
+	return html
+}
+
+func replaceTag(html, old, new string) string {
+	// Simple string replacement
+	result := ""
+	for i := 0; i < len(html); i++ {
+		if i+len(old) <= len(html) && html[i:i+len(old)] == old {
+			result += new
+			i += len(old) - 1
+		} else {
+			result += string(html[i])
+		}
+	}
+	return result
 }
