@@ -73,8 +73,7 @@ const app = {
         }
 
         try {
-            const result = await saveProject();
-            alert('Project saved successfully!');
+            await saveProject();
         } catch (err) {
             alert('Error saving project: ' + err);
         }
@@ -159,6 +158,26 @@ const app = {
             await this.refreshPanels();
         } catch (err) {
             alert('Error deleting panel: ' + err);
+        }
+    },
+
+    async renameProject() {
+        if (!this.currentProject) {
+            alert('No project to rename');
+            return;
+        }
+
+        const newName = prompt('Enter new project name:', this.currentProject.name);
+        if (!newName || newName.trim() === '') {
+            return; // User cancelled or entered empty name
+        }
+
+        try {
+            await renameProject(newName.trim());
+            this.currentProject.name = newName.trim();
+            document.getElementById('projectName').textContent = newName.trim();
+        } catch (err) {
+            alert('Error renaming project: ' + err);
         }
     }
 };

@@ -122,7 +122,11 @@ func (h *Handlers) SaveProject() (string, error) {
 }
 
 // LoadProject loads a project from a file
-func (h *Handlers) LoadProject(filePath string) (string, error) {
+func (h *Handlers) LoadProject() (string, error) {
+	// Use default path pattern - in real app would use file dialog
+	// For now, just look for project.json
+	filePath := "projects/project.json"
+
 	project, err := storage.LoadProject(filePath)
 	if err != nil {
 		return "", err
@@ -139,4 +143,12 @@ func (h *Handlers) LoadProject(filePath string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+// RenameProject renames the current project
+func (h *Handlers) RenameProject(newName string) error {
+	if !h.state.RenameProject(newName) {
+		return fmt.Errorf("no project to rename")
+	}
+	return nil
 }

@@ -37,10 +37,11 @@ func main() {
 	w.Bind("deletePanel", handlers.DeletePanel)
 	w.Bind("saveProject", handlers.SaveProject)
 	w.Bind("loadProject", handlers.LoadProject)
+	w.Bind("renameProject", handlers.RenameProject)
 
 	// Load HTML from embedded filesystem
 	log.Println("Loading web assets...")
-	
+
 	htmlBytes, err := fs.ReadFile(webFS, "web/index.html")
 	if err != nil {
 		log.Fatal("Failed to read index.html:", err)
@@ -68,7 +69,7 @@ func main() {
 	// Inject CSS and JS into HTML
 	html := string(htmlBytes)
 	html = injectAssets(html, string(cssBytes), string(appJSBytes), string(panelsJSBytes))
-	
+
 	log.Printf("Final HTML length: %d bytes\n", len(html))
 	log.Println("Setting HTML content...")
 

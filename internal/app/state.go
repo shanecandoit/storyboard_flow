@@ -9,7 +9,7 @@ import (
 
 // State manages the application state
 type State struct {
-	mu            sync.RWMutex
+	mu             sync.RWMutex
 	CurrentProject *models.Project
 	ProjectPath    string
 	IsDirty        bool // true if project has unsaved changes
@@ -191,4 +191,19 @@ func (s *State) MarkClean() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.IsDirty = false
+}
+
+// RenameProject renames the current project
+func (s *State) RenameProject(newName string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.CurrentProject == nil {
+		return false
+	}
+
+	s.CurrentProject.Name = newName
+	s.CurrentProject.ModifiedAt = time.Now()
+	s.IsDirty = true
+	return true
 }
