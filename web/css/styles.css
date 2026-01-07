@@ -4,23 +4,46 @@
     box-sizing: border-box;
 }
 
+:root {
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --text: #222222;
+    --muted: #666666;
+    --border: #dddddd;
+    --button-bg: #ffffff;
+    --button-text: #222222;
+    --button-hover: #f0f0f0;
+}
+
+.dark {
+    --bg: #0f1115;
+    --surface: #121316;
+    --text: #e6e6e6;
+    --muted: #9aa0a6;
+    --border: #22262b;
+    --button-bg: #17181b;
+    --button-text: #e6e6e6;
+    --button-hover: #212325;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #f5f5f5;
-    color: #333;
+    background: var(--bg);
+    color: var(--text);
     line-height: 1.6;
 }
 
 .container {
     max-width: 1400px;
     margin: 0 auto;
-    background: white;
+    background: var(--surface);
 }
 
 /* Header */
 header {
     padding: 20px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border);
+    position: relative;
 }
 
 header h1 {
@@ -37,14 +60,15 @@ header h1 {
 
 .project-name {
     margin-left: 16px;
-    color: #666;
+    color: var(--muted);
     font-size: 14px;
 }
 
 /* Buttons */
 button {
-    background: white;
-    border: 1px solid #999;
+    background: var(--button-bg);
+    border: 1px solid var(--border);
+    color: var(--button-text);
     padding: 8px 16px;
     font-size: 14px;
     cursor: pointer;
@@ -52,11 +76,20 @@ button {
 }
 
 button:hover {
-    background: #f0f0f0;
+    background: var(--button-hover);
 }
 
 button:active {
-    background: #e0e0e0;
+    opacity: 0.95;
+}
+
+.theme-toggle {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 16px;
 }
 
 /* Main Layout */

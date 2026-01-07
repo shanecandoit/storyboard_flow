@@ -1,3 +1,37 @@
+// Theme handling
+const Theme = {
+    key: 'theme',
+    get() {
+        try {
+            return localStorage.getItem(this.key) || 'light';
+        } catch (e) {
+            return 'light';
+        }
+    },
+    apply(t) {
+        if (t === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
+        try {
+            localStorage.setItem(this.key, t);
+        } catch (e) {
+            // localStorage not available - theme won't persist
+        }
+        updateThemeToggle();
+    },
+    toggle() {
+        const isDark = document.documentElement.classList.contains('dark');
+        this.apply(isDark ? 'light' : 'dark');
+    }
+};
+
+function updateThemeToggle() {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const isDark = document.documentElement.classList.contains('dark');
+    btn.textContent = isDark ? 'dark' : 'light';
+    btn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+}
+
 // Main application state and handlers
 const app = {
     currentProject: null,
@@ -7,6 +41,10 @@ const app = {
         // Create a default project on startup
         this.newProject();
         await this.refreshPanels();
+        // Initialize theme
+        Theme.apply(Theme.get());
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.addEventListener('click', () => Theme.toggle());
     },
 
     async newProject() {
