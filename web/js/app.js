@@ -10,8 +10,11 @@ const app = {
     },
 
     async newProject() {
-        const name = prompt('Enter project name:', 'Untitled Project');
-        if (!name) return;
+        // Auto-generate name: project_YYYY-MM-DD_HH-mm-ss
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+        const name = `project_${timestamp}`;
 
         try {
             await createNewProject(name);
@@ -41,7 +44,8 @@ const app = {
 
     async loadProject() {
         try {
-            const result = await loadProject();
+            const resultStr = await loadProject();
+            const result = JSON.parse(resultStr);
             this.currentProject = { name: result.name || 'Loaded Project' };
             this.selectedPanelId = null;
             document.getElementById('projectName').textContent = this.currentProject.name;
@@ -54,7 +58,8 @@ const app = {
 
     async addPanel() {
         try {
-            const panel = await createPanel();
+            const panelStr = await createPanel();
+            const panel = JSON.parse(panelStr);
             await this.refreshPanels();
             this.selectPanel(panel.id);
         } catch (err) {
@@ -64,7 +69,8 @@ const app = {
 
     async refreshPanels() {
         try {
-            const panels = await getPanels();
+            const panelsStr = await getPanels();
+            const panels = JSON.parse(panelsStr);
             renderPanelGrid(panels);
         } catch (err) {
             console.error('Error refreshing panels:', err);
@@ -79,7 +85,8 @@ const app = {
 
     async loadPanelEditor(panelId) {
         try {
-            const panels = await getPanels();
+            const panelsStr = await getPanels();
+            const panels = JSON.parse(panelsStr);
             const panel = panels.find(p => p.id === panelId);
             if (!panel) return;
 
