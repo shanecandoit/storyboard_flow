@@ -110,7 +110,7 @@ const app = {
     },
 
     async deletePanel(panelId) {
-        if (!confirm('Delete this panel?')) return;
+        // Soft delete/Direct delete without confirmation as requested
 
         try {
             await deletePanel(panelId);
