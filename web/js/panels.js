@@ -1,5 +1,120 @@
 // Panel rendering and management
 
+const Drawing = {
+    canvas: null,
+    ctx: null,
+    isDrawing: false,
+    currentPanel: null,
+    history: [],
+    brushSize: 2,
+    color: '#000000',
+
+    init(panel) {
+        this.canvas = document.getElementById('drawingCanvas');
+        if (!this.canvas) return;
+
+        this.ctx = this.canvas.getContext('2d');
+        this.currentPanel = panel;
+        this.history = [];
+
+        // Load existing image if present
+        if (panel.image_data) {
+            const img = new Image();
+            img.onload = () => {
+                this.ctx.drawImage(img, 0, 0);
+                this.saveState();
+            };
+            img.src = panel.image_data;
+        } else {
+            // Fill with white background
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.saveState();
+        }
+
+        // Setup event listeners
+        this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+        this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+        this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+        this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
+    },
+
+    startDrawing(e) {
+        this.isDrawing = true;
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y);
+    },
+
+    draw(e) {
+        if (!this.isDrawing) return;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        this.ctx.lineTo(x, y);
+        this.ctx.strokeStyle = this.color;
+        this.ctx.lineWidth = this.brushSize;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.stroke();
+    },
+
+    stopDrawing() {
+        if (this.isDrawing) {
+            this.isDrawing = false;
+            this.saveState();
+            this.saveToPanel();
+        }
+    },
+
+    saveState() {
+        this.history.push(this.canvas.toDataURL());
+        if (this.history.length > 20) {
+            this.history.shift();
+        }
+    },
+
+    async saveToPanel() {
+        if (!this.currentPanel) return;
+        const imageData = this.canvas.toDataURL('image/png');
+        await app.updatePanelField(this.currentPanel.id, 'image_data', imageData);
+    },
+
+    undo() {
+        if (this.history.length > 1) {
+            this.history.pop();
+            const prevState = this.history[this.history.length - 1];
+            const img = new Image();
+            img.onload = () => {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.drawImage(img, 0, 0);
+            };
+            img.src = prevState;
+            this.saveToPanel();
+        }
+    },
+
+    clear() {
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.saveState();
+        this.saveToPanel();
+    },
+
+    setBrushSize(size) {
+        this.brushSize = parseInt(size);
+    },
+
+    setColor(color) {
+        this.color = color;
+    }
+};
+
 function renderPanelGrid(panels) {
     const grid = document.getElementById('panelGrid');
 
@@ -31,6 +146,27 @@ function renderPanelEditor(panel) {
 
     editor.innerHTML = `
         <h3>Panel ${panel.order + 1}</h3>
+        
+        <div class="form-group">
+            <label>Visual Frame</label>
+            <div class="canvas-container">
+                <canvas id="drawingCanvas" width="640" height="360"></canvas>
+            </div>
+            <div class="canvas-toolbar">
+                <button onclick="Drawing.clear()">Clear</button>
+                <button onclick="Drawing.undo()">Undo</button>
+                <label>
+                    Brush Size: 
+                    <input type="range" id="brushSize" min="1" max="10" value="2" 
+                           onchange="Drawing.setBrushSize(this.value)">
+                </label>
+                <label>
+                    Color: 
+                    <input type="color" id="brushColor" value="#000000" 
+                           onchange="Drawing.setColor(this.value)">
+                </label>
+            </div>
+        </div>
         
         <div class="form-group">
             <label>Action Notes</label>
@@ -84,4 +220,7 @@ function renderPanelEditor(panel) {
             </div>
         </div>
     `;
+
+    // Initialize drawing after rendering
+    Drawing.init(panel);
 }

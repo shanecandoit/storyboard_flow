@@ -79,6 +79,10 @@ func (h *Handlers) UpdatePanel(panelID, field string, value interface{}) error {
 			if v, ok := value.(float64); ok {
 				p.Duration = v
 			}
+		case "image_data":
+			if v, ok := value.(string); ok {
+				p.ImageData = v
+			}
 		}
 	})
 

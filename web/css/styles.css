@@ -234,3 +234,47 @@ section h2 {
     padding: 40px 20px;
     color: #999;
 }
+
+/* Drawing Canvas */
+.canvas-container {
+    border: 1px solid var(--border);
+    background: #ffffff;
+    display: inline-block;
+}
+
+#drawingCanvas {
+    display: block;
+    cursor: crosshair;
+    background: white;
+}
+
+.canvas-toolbar {
+    margin-top: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.canvas-toolbar button {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.canvas-toolbar label {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.canvas-toolbar input[type="range"] {
+    width: 80px;
+}
+
+.canvas-toolbar input[type="color"] {
+    width: 40px;
+    height: 24px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
