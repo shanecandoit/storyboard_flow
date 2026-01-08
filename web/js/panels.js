@@ -83,6 +83,7 @@ const Drawing = {
         if (!this.currentPanel) return;
         const imageData = this.canvas.toDataURL('image/png');
         await app.updatePanelField(this.currentPanel.id, 'image_data', imageData);
+        await app.refreshPanels();
     },
 
     undo() {
