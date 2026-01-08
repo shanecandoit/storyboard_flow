@@ -38,6 +38,7 @@ func main() {
 	w.Bind("saveProject", handlers.SaveProject)
 	w.Bind("loadProject", handlers.LoadProject)
 	w.Bind("renameProject", handlers.RenameProject)
+	w.Bind("saveExportHTML", handlers.SaveExportHTML)
 	w.Bind("duplicatePanel", handlers.DuplicatePanel)
 
 	// Load HTML from embedded filesystem

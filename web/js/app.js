@@ -191,9 +191,131 @@ const app = {
             alert('Error renaming project: ' + err);
         }
     }
+,
+
+    async exportPdf() {
+        if (!this.currentProject) {
+            alert('No project to export');
+            return;
+        }
+
+        try {
+            const panelsStr = await getPanels();
+            const panels = JSON.parse(panelsStr);
+
+            const title = this.currentProject.name || 'Storyboard Export';
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `${title}_export_${timestamp}.html`;
+
+            // build print-friendly HTML
+            const css = `
+                <style>
+                @media print {
+                  body { background: white; color: black; }
+                  header, .toolbar, .canvas-toolbar, .theme-toggle { display: none !important; }
+                  .panel-page { page-break-after: always; width: 100%; padding: 12px; }
+                  .panel-thumbnail img { max-width: 100%; height: auto; page-break-inside: avoid; }
+                  @page { size: A4; margin: 15mm; }
+                }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 20px; }
+                h1 { font-size: 20px; margin-bottom: 12px; }
+                .panel { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+                .meta { font-size: 13px; color: #222; }
+                </style>
+            `;
+
+            let body = `<h1>${escapeHtml(title)}</h1>`;
+            for (const p of panels) {
+                body += `<div class="panel-page"><div class="panel"><div class="panel-thumbnail">`;
+                if (p.image_data) body += `<img src="${p.image_data}" alt="panel-${p.order}">`;
+                else body += `<div style="width:320px;height:180px;background:#eee;display:flex;align-items:center;justify-content:center;color:#999">No image</div>`;
+                body += `</div><div class="meta">`;
+                body += `<strong>Panel ${p.order + 1}</strong><br>`;
+                if (p.action_notes) body += `<div><em>Action:</em> ${escapeHtml(p.action_notes)}</div>`;
+                if (p.dialogue) body += `<div><em>Dialogue:</em> ${escapeHtml(p.dialogue)}</div>`;
+                body += `<div><em>Shot:</em> ${escapeHtml(p.shot_type || '')} | <em>Angle:</em> ${escapeHtml(p.camera_angle || '')} | <em>Move:</em> ${escapeHtml(p.camera_move || '')}</div>`;
+                body += `<div><em>Duration:</em> ${p.duration}s</div>`;
+                body += `</div></div></div>`;
+            }
+
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>${css}</head><body>${body}</body></html>`;
+
+            // Save HTML to disk (assets/prints)
+            try {
+                await saveExportHTML(filename, html);
+            } catch (e) {
+                console.warn('Could not save export HTML:', e);
+            }
+
+            // print via hidden iframe
+            await printHtml(html);
+
+        } catch (err) {
+            alert('Error exporting: ' + err);
+        }
+    }
 };
 
 // Initialize app when page loads
 window.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
+
+// Helpers
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>\"]/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+}
+
+function printHtml(html) {
+    return new Promise((resolve, reject) => {
+        try {
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(html);
+            doc.close();
+
+            const tryPrint = () => {
+                try {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                        resolve();
+                    }, 500);
+                } catch (e) {
+                    document.body.removeChild(iframe);
+                    reject(e);
+                }
+            };
+
+            // Wait for images to load
+            iframe.onload = () => {
+                const imgs = doc.images || [];
+                const promises = [];
+                for (let i = 0; i < imgs.length; i++) {
+                    if (!imgs[i].complete) {
+                        promises.push(new Promise(r => { imgs[i].onload = r; imgs[i].onerror = r; }));
+                    }
+                }
+                Promise.all(promises).then(tryPrint).catch(tryPrint);
+            };
+
+            // In case onload doesn't fire
+            setTimeout(tryPrint, 800);
+        } catch (e) {
+            reject(e);
+        }
+    });
+}

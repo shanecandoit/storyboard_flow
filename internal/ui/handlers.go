@@ -3,6 +3,8 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"storyboard_flow/internal/app"
 	"storyboard_flow/internal/models"
@@ -170,4 +172,26 @@ func (h *Handlers) RenameProject(newName string) error {
 		return fmt.Errorf("no project to rename")
 	}
 	return nil
+}
+
+// SaveExportHTML saves provided HTML content to disk under assets/prints
+func (h *Handlers) SaveExportHTML(filename, content string) (string, error) {
+	dir := filepath.FromSlash("assets/prints")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+
+	if filename == "" {
+		filename = "export.html"
+	}
+
+	// keep filename safe-ish
+	safe := filepath.Base(filename)
+	path := filepath.Join(dir, safe)
+
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
