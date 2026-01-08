@@ -52,6 +52,49 @@ func (s *State) AddPanel() *models.Panel {
 	return panel
 }
 
+// DuplicatePanel creates a copy of the specified panel and appends it
+func (s *State) DuplicatePanel(panelID string) *models.Panel {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.CurrentProject == nil {
+		return nil
+	}
+
+	var src *models.Panel
+	for i := range s.CurrentProject.Panels {
+		if s.CurrentProject.Panels[i].ID == panelID {
+			src = &s.CurrentProject.Panels[i]
+			break
+		}
+	}
+
+	if src == nil {
+		return nil
+	}
+
+	// Create a new panel and copy fields (use NewPanel to get a valid ID)
+	newPanel := models.NewPanel(len(s.CurrentProject.Panels))
+	newPanel.ImageData = src.ImageData
+	newPanel.ActionNotes = src.ActionNotes
+	newPanel.Dialogue = src.Dialogue
+	newPanel.ShotType = src.ShotType
+	newPanel.CameraAngle = src.CameraAngle
+	newPanel.CameraMove = src.CameraMove
+	newPanel.Duration = src.Duration
+	// Copy character IDs slice
+	if len(src.CharacterIDs) > 0 {
+		newPanel.CharacterIDs = make([]string, len(src.CharacterIDs))
+		copy(newPanel.CharacterIDs, src.CharacterIDs)
+	}
+
+	s.CurrentProject.Panels = append(s.CurrentProject.Panels, *newPanel)
+	s.CurrentProject.ModifiedAt = time.Now()
+	s.IsDirty = true
+
+	return newPanel
+}
+
 // UpdatePanel updates an existing panel
 func (s *State) UpdatePanel(panelID string, updater func(*models.Panel)) bool {
 	s.mu.Lock()

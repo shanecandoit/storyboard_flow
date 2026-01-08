@@ -104,6 +104,17 @@ const app = {
         }
     },
 
+    async duplicatePanel(panelId) {
+        try {
+            const panelStr = await duplicatePanel(panelId);
+            const panel = JSON.parse(panelStr);
+            await this.refreshPanels();
+            this.selectPanel(panel.id);
+        } catch (err) {
+            alert('Error duplicating panel: ' + err);
+        }
+    },
+
     async refreshPanels() {
         try {
             const panelsStr = await getPanels();

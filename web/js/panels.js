@@ -136,6 +136,7 @@ function renderPanelGrid(panels) {
                 ${panel.duration}s
             </div>
             <div class="panel-actions">
+                <button onclick="event.stopPropagation(); app.duplicatePanel('${panel.id}')">Duplicate</button>
                 <button onclick="event.stopPropagation(); app.deletePanel('${panel.id}')">Delete</button>
             </div>
         </div>

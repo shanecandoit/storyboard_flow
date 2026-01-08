@@ -38,6 +38,7 @@ func main() {
 	w.Bind("saveProject", handlers.SaveProject)
 	w.Bind("loadProject", handlers.LoadProject)
 	w.Bind("renameProject", handlers.RenameProject)
+	w.Bind("duplicatePanel", handlers.DuplicatePanel)
 
 	// Load HTML from embedded filesystem
 	log.Println("Loading web assets...")

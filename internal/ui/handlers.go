@@ -40,6 +40,21 @@ func (h *Handlers) CreatePanel() (string, error) {
 	return string(data), nil
 }
 
+// DuplicatePanel duplicates an existing panel and returns the new panel as JSON
+func (h *Handlers) DuplicatePanel(panelID string) (string, error) {
+	panel := h.state.DuplicatePanel(panelID)
+	if panel == nil {
+		return "", fmt.Errorf("failed to duplicate panel")
+	}
+
+	data, err := json.Marshal(panel)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 // GetPanels returns all panels as JSON
 func (h *Handlers) GetPanels() (string, error) {
 	panels := h.state.GetPanels()
