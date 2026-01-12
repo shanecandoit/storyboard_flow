@@ -163,7 +163,7 @@ func (s *State) GetPanels() []models.Panel {
 }
 
 // AddCharacter adds a new character to the current project
-func (s *State) AddCharacter(name, description string) *models.Character {
+func (s *State) AddCharacter(name, description, imagePath string) *models.Character {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -172,6 +172,7 @@ func (s *State) AddCharacter(name, description string) *models.Character {
 	}
 
 	character := models.NewCharacter(name, description)
+	character.ImagePath = imagePath
 	s.CurrentProject.Characters = append(s.CurrentProject.Characters, *character)
 	s.CurrentProject.ModifiedAt = time.Now()
 	s.IsDirty = true
@@ -290,6 +291,52 @@ func (s *State) ReorderPanel(panelID string, newIndex int) bool {
 	// Update Order fields for all panels
 	for i := range s.CurrentProject.Panels {
 		s.CurrentProject.Panels[i].Order = i
+	}
+
+	s.CurrentProject.ModifiedAt = time.Now()
+	s.IsDirty = true
+	return true
+}
+
+// DeleteCharacter removes a character from the project and cleans up references
+func (s *State) DeleteCharacter(characterID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.CurrentProject == nil {
+		return false
+	}
+
+	// Find and remove character
+	found := false
+	for i, char := range s.CurrentProject.Characters {
+		if char.ID == characterID {
+			s.CurrentProject.Characters = append(
+				s.CurrentProject.Characters[:i],
+				s.CurrentProject.Characters[i+1:]...,
+			)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return false
+	}
+
+	// Remove character ID from all panels
+	for i := range s.CurrentProject.Panels {
+		panel := &s.CurrentProject.Panels[i]
+		if len(panel.CharacterIDs) > 0 {
+			// Filter out the deleted character ID
+			newIDs := make([]string, 0, len(panel.CharacterIDs))
+			for _, id := range panel.CharacterIDs {
+				if id != characterID {
+					newIDs = append(newIDs, id)
+				}
+			}
+			panel.CharacterIDs = newIDs
+		}
 	}
 
 	s.CurrentProject.ModifiedAt = time.Now()

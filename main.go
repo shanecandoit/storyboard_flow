@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"log"
+	"strings"
 
 	webview "github.com/webview/webview_go"
 
@@ -41,6 +42,9 @@ func main() {
 	w.Bind("saveExportHTML", handlers.SaveExportHTML)
 	w.Bind("duplicatePanel", handlers.DuplicatePanel)
 	w.Bind("reorderPanel", handlers.ReorderPanel)
+	w.Bind("addCharacter", handlers.AddCharacter)
+	w.Bind("getCharacters", handlers.GetCharacters)
+	w.Bind("deleteCharacter", handlers.DeleteCharacter)
 
 	// Load HTML from embedded filesystem
 	log.Println("Loading web assets...")
@@ -69,9 +73,17 @@ func main() {
 	}
 	log.Printf("Loaded panels.js: %d bytes\n", len(panelsJSBytes))
 
+	charactersJSBytes, err := fs.ReadFile(webFS, "web/js/characters.js")
+	if err != nil {
+		log.Printf("Warning: Failed to read characters.js (might not exist yet): %v\n", err)
+		charactersJSBytes = []byte("")
+	} else {
+		log.Printf("Loaded characters.js: %d bytes\n", len(charactersJSBytes))
+	}
+
 	// Inject CSS and JS into HTML
 	html := string(htmlBytes)
-	html = injectAssets(html, string(cssBytes), string(appJSBytes), string(panelsJSBytes))
+	html = injectAssets(html, string(cssBytes), string(appJSBytes), string(panelsJSBytes), string(charactersJSBytes))
 
 	log.Printf("Final HTML length: %d bytes\n", len(html))
 	log.Println("Setting HTML content...")
@@ -82,24 +94,11 @@ func main() {
 	log.Println("WebView closed")
 }
 
-func injectAssets(html, css, appJS, panelsJS string) string {
+func injectAssets(html, css, appJS, panelsJS, charactersJS string) string {
 	// Replace link and script tags with inline content
-	html = replaceTag(html, `<link rel="stylesheet" href="css/styles.css">`, `<style>`+css+`</style>`)
-	html = replaceTag(html, `<script src="js/app.js"></script>`, `<script>`+appJS+`</script>`)
-	html = replaceTag(html, `<script src="js/panels.js"></script>`, `<script>`+panelsJS+`</script>`)
+	html = strings.ReplaceAll(html, `<link rel="stylesheet" href="css/styles.css">`, `<style>`+css+`</style>`)
+	html = strings.ReplaceAll(html, `<script src="js/app.js"></script>`, `<script>`+appJS+`</script>`)
+	html = strings.ReplaceAll(html, `<script src="js/characters.js"></script>`, `<script>`+charactersJS+`</script>`)
+	html = strings.ReplaceAll(html, `<script src="js/panels.js"></script>`, `<script>`+panelsJS+`</script>`)
 	return html
-}
-
-func replaceTag(html, old, new string) string {
-	// Simple string replacement
-	result := ""
-	for i := 0; i < len(html); i++ {
-		if i+len(old) <= len(html) && html[i:i+len(old)] == old {
-			result += new
-			i += len(old) - 1
-		} else {
-			result += string(html[i])
-		}
-	}
-	return result
 }

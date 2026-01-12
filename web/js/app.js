@@ -45,6 +45,11 @@ const app = {
         Theme.apply(Theme.get());
         const btn = document.getElementById('themeToggle');
         if (btn) btn.addEventListener('click', () => Theme.toggle());
+
+        // Initialize characters
+        if (typeof Characters !== 'undefined') {
+            Characters.init();
+        }
     },
 
     async newProject() {
@@ -88,6 +93,12 @@ const app = {
             document.getElementById('projectName').textContent = this.currentProject.name;
             await this.refreshPanels();
             this.clearEditor();
+            
+            // Refresh characters after loading project
+            if (typeof Characters !== 'undefined') {
+                await Characters.refresh();
+                Characters.renderList();
+            }
         } catch (err) {
             alert('Error loading project: ' + err);
         }
@@ -249,7 +260,7 @@ const app = {
                 .panel { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
                 .meta { font-size: 13px; color: #222; }
                 </style>
-            `;
+            `.replace(/<style>/g, '<' + 'style>').replace(/<\/style>/g, '<' + '/style>');
 
             let body = `<h1>${escapeHtml(title)}</h1>`;
             for (const p of panels) {
@@ -264,6 +275,11 @@ const app = {
                 body += `<div><em>Duration:</em> ${p.duration}s</div>`;
                 body += `</div></div></div>`;
             }
+
+            // Using concatenation for script tags to avoid parser issues when this file is inlined
+            const scriptopen = '<' + 'script>';
+            const scriptclose = '<' + '/script>';
+            const stylesclose = '<' + '/style>'; // Backup just in case
 
             const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>${css}</head><body>${body}</body></html>`;
 

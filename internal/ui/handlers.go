@@ -100,6 +100,17 @@ func (h *Handlers) UpdatePanel(panelID, field string, value interface{}) error {
 			if v, ok := value.(string); ok {
 				p.ImageData = v
 			}
+		case "character_ids":
+			if v, ok := value.([]interface{}); ok {
+				ids := make([]string, 0, len(v))
+				for _, id := range v {
+					if idStr, ok := id.(string); ok {
+						ids = append(ids, idStr)
+					}
+				}
+				p.CharacterIDs = ids
+			}
+
 		}
 	})
 
@@ -182,7 +193,52 @@ func (h *Handlers) ReorderPanel(panelID string, newIndex int) error {
 	return nil
 }
 
-// SaveExportHTML saves provided HTML content to disk under assets/prints
+// AddCharacter adds a new character to the project
+func (h *Handlers) AddCharacter(name, description, imageData string) (string, error) {
+	// 1. Save image if provided
+	imagePath := ""
+	if imageData != "" {
+		var err error
+		imagePath, err = storage.SaveCharacterImage(imageData, "char")
+		if err != nil {
+			return "", fmt.Errorf("failed to save character image: %w", err)
+		}
+	}
+
+	// 2. Add character to state
+	// Note: state.AddCharacter signature was updated to accept imagePath
+	char := h.state.AddCharacter(name, description, imagePath)
+	if char == nil {
+		return "", fmt.Errorf("failed to add character")
+	}
+
+	data, err := json.Marshal(char)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+// GetCharacters returns all characters as JSON
+func (h *Handlers) GetCharacters() (string, error) {
+	characters := h.state.GetCharacters()
+	data, err := json.Marshal(characters)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+// DeleteCharacter removes a character from the project
+func (h *Handlers) DeleteCharacter(characterID string) error {
+	if !h.state.DeleteCharacter(characterID) {
+		return fmt.Errorf("character not found")
+	}
+	return nil
+}
+
 func (h *Handlers) SaveExportHTML(filename, content string) (string, error) {
 	dir := filepath.FromSlash("assets/prints")
 	if err := os.MkdirAll(dir, 0755); err != nil {

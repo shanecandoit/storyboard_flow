@@ -64,7 +64,7 @@ const Drawing = {
         this.ctx.stroke();
     },
 
-    stopDrawing() {
+    stopDrawing(e) {
         if (this.isDrawing) {
             this.isDrawing = false;
             this.saveState();
@@ -192,27 +192,6 @@ function handleDrop(e, targetPanelId) {
     });
 
     if (draggedPanelId !== targetPanelId) {
-        // Find index of dragged and target
-        // We'll trust the app.reorderPanel to handle exact index logic,
-        // but here we need to calculate the NEW index for the dragged panel.
-        // It's a bit complex because reordering depends on whether we move up or down.
-        // Simplified approach: find target index and request reorder to that index.
-
-        // However, we don't have direct access to indices here without querying state or DOM.
-        // Let's rely on app.state via getPanels inside app.js or we can pass index in HTML.
-        // Passing index is easier.
-        // But let's fetch panels to be safe.
-
-        // Actually, easier: pass newIndex logic to app.js? No, drag drop usually gives us target.
-        // We can find the index of targetPanelId in the current successful render.
-
-        // Let's implement calculateTargetIndex in app.js or just find it here if we had panels.
-        // We don't have 'panels' variable in scope here.
-
-        // Alternative: call app.reorderPanelByTarget(draggedId, targetId)
-        // But app.reorderPanel takes (id, index).
-
-        // Let's fallback to looking up indices in DOM since they are rendered in order.
         const cards = Array.from(document.querySelectorAll('.panel-card'));
         const targetIndex = cards.findIndex(c => c.onclick.toString().includes(targetPanelId));
 
@@ -226,6 +205,30 @@ function handleDrop(e, targetPanelId) {
 
 function renderPanelEditor(panel) {
     const editor = document.getElementById('panelEditor');
+
+    // Character Selection
+    let charSection = '';
+    if (typeof Characters !== 'undefined' && Characters.list && Characters.list.length > 0) {
+        charSection = `
+            <div class="form-group">
+                <label>Characters</label>
+                <div class="character-tags">
+        `;
+
+        Characters.list.forEach(char => {
+            const isSelected = panel.character_ids && panel.character_ids.includes(char.id);
+            charSection += `
+                <label class="character-tag">
+                    <input type="checkbox" 
+                           ${isSelected ? 'checked' : ''} 
+                           onchange="togglePanelCharacter('${panel.id}', '${char.id}', this.checked)">
+                    ${char.name}
+                </label>
+            `;
+        });
+
+        charSection += `</div></div>`;
+    }
 
     editor.innerHTML = `
         <h3>Panel ${panel.order + 1}</h3>
@@ -250,6 +253,8 @@ function renderPanelEditor(panel) {
                 </label>
             </div>
         </div>
+        
+        ${charSection}
         
         <div class="form-group">
             <label>Action Notes</label>
@@ -306,4 +311,28 @@ function renderPanelEditor(panel) {
 
     // Initialize drawing after rendering
     Drawing.init(panel);
+}
+
+async function togglePanelCharacter(panelId, charId, isChecked) {
+    try {
+        const panelsStr = await getPanels();
+        const panels = JSON.parse(panelsStr);
+        const panel = panels.find(p => p.id === panelId);
+
+        if (!panel) return;
+
+        let ids = panel.character_ids || [];
+
+        if (isChecked) {
+            if (!ids.includes(charId)) {
+                ids.push(charId);
+            }
+        } else {
+            ids = ids.filter(id => id !== charId);
+        }
+
+        await app.updatePanelField(panelId, 'character_ids', ids);
+    } catch (err) {
+        console.error('Error toggling character:', err);
+    }
 }
