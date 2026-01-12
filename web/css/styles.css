@@ -182,15 +182,30 @@ section h2 {
     color: #666;
 }
 
+.panel-card.dragging {
+    opacity: 0.4;
+    border: 2px dashed #999;
+}
+
+.panel-card.drag-over {
+    border: 2px solid #000;
+    transform: scale(1.02);
+}
+
 .panel-actions {
     margin-top: 8px;
     display: flex;
     gap: 4px;
+    flex-wrap: wrap;
+    /* allow wrapping on small screens */
 }
 
 .panel-actions button {
     font-size: 12px;
     padding: 4px 8px;
+    flex: 1;
+    /* Make buttons even width if possible */
+    min-width: 30px;
 }
 
 /* Panel Editor */

@@ -236,6 +236,67 @@ func (s *State) MarkClean() {
 	s.IsDirty = false
 }
 
+// ReorderPanel moves a panel to a new index
+func (s *State) ReorderPanel(panelID string, newIndex int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.CurrentProject == nil {
+		return false
+	}
+
+	// Find the current index of the panel
+	currentIndex := -1
+	for i, panel := range s.CurrentProject.Panels {
+		if panel.ID == panelID {
+			currentIndex = i
+			break
+		}
+	}
+
+	if currentIndex == -1 {
+		return false // Panel not found
+	}
+
+	// Validate new index
+	if newIndex < 0 || newIndex >= len(s.CurrentProject.Panels) {
+		return false
+	}
+
+	if currentIndex == newIndex {
+		return true // No change
+	}
+
+	// Move the panel
+	panel := s.CurrentProject.Panels[currentIndex]
+	
+	// Remove from old position
+	s.CurrentProject.Panels = append(
+		s.CurrentProject.Panels[:currentIndex],
+		s.CurrentProject.Panels[currentIndex+1:]...,
+	)
+
+	// Insert at new position
+	// If newIndex is basically extending (handling bounds for insert)
+	if newIndex >= len(s.CurrentProject.Panels) {
+		s.CurrentProject.Panels = append(s.CurrentProject.Panels, panel)
+	} else {
+		s.CurrentProject.Panels = append(
+			s.CurrentProject.Panels[:newIndex],
+			append([]models.Panel{panel}, s.CurrentProject.Panels[newIndex:]...)...,
+		)
+	}
+
+	// Update Order fields for all panels
+	for i := range s.CurrentProject.Panels {
+		s.CurrentProject.Panels[i].Order = i
+	}
+
+	s.CurrentProject.ModifiedAt = time.Now()
+	s.IsDirty = true
+	return true
+}
+
 // RenameProject renames the current project
 func (s *State) RenameProject(newName string) bool {
 	s.mu.Lock()

@@ -190,8 +190,35 @@ const app = {
         } catch (err) {
             alert('Error renaming project: ' + err);
         }
-    }
-,
+    },
+
+    async reorderPanel(panelId, newIndex) {
+        try {
+            await reorderPanel(panelId, newIndex);
+            await this.refreshPanels();
+        } catch (err) {
+            console.error('Error reordering panel:', err);
+        }
+    },
+
+    async movePanel(panelId, direction) {
+        try {
+            const panelsStr = await getPanels();
+            const panels = JSON.parse(panelsStr);
+            const index = panels.findIndex(p => p.id === panelId);
+
+            if (index === -1) return;
+
+            const newIndex = index + direction;
+
+            // Check bounds
+            if (newIndex < 0 || newIndex >= panels.length) return;
+
+            await this.reorderPanel(panelId, newIndex);
+        } catch (err) {
+            console.error('Error moving panel:', err);
+        }
+    },
 
     async exportPdf() {
         if (!this.currentProject) {
@@ -265,7 +292,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>\"]/g, function (c) {
-        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
 }
 

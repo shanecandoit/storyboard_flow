@@ -174,6 +174,14 @@ func (h *Handlers) RenameProject(newName string) error {
 	return nil
 }
 
+// ReorderPanel moves a panel to a new position
+func (h *Handlers) ReorderPanel(panelID string, newIndex int) error {
+	if !h.state.ReorderPanel(panelID, newIndex) {
+		return fmt.Errorf("failed to reorder panel")
+	}
+	return nil
+}
+
 // SaveExportHTML saves provided HTML content to disk under assets/prints
 func (h *Handlers) SaveExportHTML(filename, content string) (string, error) {
 	dir := filepath.FromSlash("assets/prints")

@@ -124,9 +124,14 @@ function renderPanelGrid(panels) {
         return;
     }
 
-    grid.innerHTML = panels.map(panel => `
+    grid.innerHTML = panels.map((panel, index) => `
         <div class="panel-card ${panel.id === app.selectedPanelId ? 'selected' : ''}" 
-             onclick="app.selectPanel('${panel.id}')">
+             onclick="app.selectPanel('${panel.id}')"
+             draggable="true"
+             ondragstart="handleDragStart(event, '${panel.id}')"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event, '${panel.id}')">
             <div class="panel-number">Panel ${panel.order + 1}</div>
             <div class="panel-thumbnail">
                 ${panel.image_data ? `<img src="${panel.image_data}" alt="Panel ${panel.order + 1}">` : 'No image'}
@@ -136,11 +141,87 @@ function renderPanelGrid(panels) {
                 ${panel.duration}s
             </div>
             <div class="panel-actions">
-                <button onclick="event.stopPropagation(); app.duplicatePanel('${panel.id}')">Duplicate</button>
-                <button onclick="event.stopPropagation(); app.deletePanel('${panel.id}')">Delete</button>
+                <button onclick="event.stopPropagation(); app.movePanel('${panel.id}', -1)" ${index === 0 ? 'disabled' : ''} title="Move Backward">&lt;</button>
+                <button onclick="event.stopPropagation(); app.movePanel('${panel.id}', 1)" ${index === panels.length - 1 ? 'disabled' : ''} title="Move Forward">&gt;</button>
+                <button onclick="event.stopPropagation(); app.duplicatePanel('${panel.id}')">Dup</button>
+                <button onclick="event.stopPropagation(); app.deletePanel('${panel.id}')">Del</button>
             </div>
         </div>
     `).join('');
+}
+
+let draggedPanelId = null;
+
+function handleDragStart(e, panelId) {
+    draggedPanelId = panelId;
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('dragging');
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault(); // Necessary. Allows us to drop.
+    }
+    e.dataTransfer.dropEffect = 'move';
+
+    // Add visual cue
+    const card = e.target.closest('.panel-card');
+    if (card) {
+        card.classList.add('drag-over');
+    }
+
+    return false;
+}
+
+function handleDragLeave(e) {
+    const card = e.target.closest('.panel-card');
+    if (card) {
+        card.classList.remove('drag-over');
+    }
+}
+
+function handleDrop(e, targetPanelId) {
+    if (e.stopPropagation) {
+        e.stopPropagation(); // stops the browser from redirecting.
+    }
+
+    // Remove visual cues
+    document.querySelectorAll('.panel-card').forEach(el => {
+        el.classList.remove('dragging');
+        el.classList.remove('drag-over');
+    });
+
+    if (draggedPanelId !== targetPanelId) {
+        // Find index of dragged and target
+        // We'll trust the app.reorderPanel to handle exact index logic,
+        // but here we need to calculate the NEW index for the dragged panel.
+        // It's a bit complex because reordering depends on whether we move up or down.
+        // Simplified approach: find target index and request reorder to that index.
+
+        // However, we don't have direct access to indices here without querying state or DOM.
+        // Let's rely on app.state via getPanels inside app.js or we can pass index in HTML.
+        // Passing index is easier.
+        // But let's fetch panels to be safe.
+
+        // Actually, easier: pass newIndex logic to app.js? No, drag drop usually gives us target.
+        // We can find the index of targetPanelId in the current successful render.
+
+        // Let's implement calculateTargetIndex in app.js or just find it here if we had panels.
+        // We don't have 'panels' variable in scope here.
+
+        // Alternative: call app.reorderPanelByTarget(draggedId, targetId)
+        // But app.reorderPanel takes (id, index).
+
+        // Let's fallback to looking up indices in DOM since they are rendered in order.
+        const cards = Array.from(document.querySelectorAll('.panel-card'));
+        const targetIndex = cards.findIndex(c => c.onclick.toString().includes(targetPanelId));
+
+        if (targetIndex !== -1) {
+            app.reorderPanel(draggedPanelId, targetIndex);
+        }
+    }
+
+    return false;
 }
 
 function renderPanelEditor(panel) {
