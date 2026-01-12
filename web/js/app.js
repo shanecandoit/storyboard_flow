@@ -131,6 +131,14 @@ const app = {
             const panelsStr = await getPanels();
             const panels = JSON.parse(panelsStr);
             renderPanelGrid(panels);
+            
+            // Refresh timeline if it's visible
+            if (typeof Timeline !== 'undefined' && Timeline) {
+                const container = document.getElementById('timelineContainer');
+                if (container && container.style.display !== 'none') {
+                    await Timeline.refresh();
+                }
+            }
         } catch (err) {
             console.error('Error refreshing panels:', err);
         }
@@ -295,6 +303,20 @@ const app = {
 
         } catch (err) {
             alert('Error exporting: ' + err);
+        }
+    },
+
+    async showTimeline() {
+        if (typeof Timeline !== 'undefined' && Timeline) {
+            await Timeline.show();
+        } else {
+            alert('Timeline component not loaded');
+        }
+    },
+
+    hideTimeline() {
+        if (typeof Timeline !== 'undefined' && Timeline) {
+            Timeline.hide();
         }
     }
 };

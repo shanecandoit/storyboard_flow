@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Storyboard Flow</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/timeline.css">
 </head>
 
 <body>
@@ -21,6 +22,7 @@
                 <span id="projectName" class="project-name"></span>
             </div>
             <button id="exportButton" class="export-button" onclick="app.exportPdf()">Export</button>
+            <button id="timelineButton" class="export-button" onclick="app.showTimeline()" style="right: 140px;">Timeline</button>
             <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">light</button>
         </header>
 
@@ -86,9 +88,23 @@
         </div>
     </div>
 
+    <!-- Timeline / Theatre View -->
+    <div id="timelineContainer">
+        <div class="timeline-header">
+            <h2>Timeline View</h2>
+            <button class="timeline-close-btn" onclick="app.hideTimeline()" title="Close timeline">&times;</button>
+        </div>
+        <div id="theatreView">
+            <div class="theatre-empty">Loading...</div>
+        </div>
+        <div id="timelineBar"></div>
+        <div id="timelineControls"></div>
+    </div>
+
     <script src="js/app.js"></script>
     <script src="js/characters.js"></script>
     <script src="js/panels.js"></script>
+    <script src="js/timeline.js"></script>
 </body>
 
 </html>

@@ -81,9 +81,25 @@ func main() {
 		log.Printf("Loaded characters.js: %d bytes\n", len(charactersJSBytes))
 	}
 
+	timelineCSSBytes, err := fs.ReadFile(webFS, "web/css/timeline.css")
+	if err != nil {
+		log.Printf("Warning: Failed to read timeline.css (might not exist yet): %v\n", err)
+		timelineCSSBytes = []byte("")
+	} else {
+		log.Printf("Loaded timeline.css: %d bytes\n", len(timelineCSSBytes))
+	}
+
+	timelineJSBytes, err := fs.ReadFile(webFS, "web/js/timeline.js")
+	if err != nil {
+		log.Printf("Warning: Failed to read timeline.js (might not exist yet): %v\n", err)
+		timelineJSBytes = []byte("")
+	} else {
+		log.Printf("Loaded timeline.js: %d bytes\n", len(timelineJSBytes))
+	}
+
 	// Inject CSS and JS into HTML
 	html := string(htmlBytes)
-	html = injectAssets(html, string(cssBytes), string(appJSBytes), string(panelsJSBytes), string(charactersJSBytes))
+	html = injectAssets(html, string(cssBytes), string(appJSBytes), string(panelsJSBytes), string(charactersJSBytes), string(timelineCSSBytes), string(timelineJSBytes))
 
 	log.Printf("Final HTML length: %d bytes\n", len(html))
 	log.Println("Setting HTML content...")
@@ -94,11 +110,13 @@ func main() {
 	log.Println("WebView closed")
 }
 
-func injectAssets(html, css, appJS, panelsJS, charactersJS string) string {
+func injectAssets(html, css, appJS, panelsJS, charactersJS, timelineCSS, timelineJS string) string {
 	// Replace link and script tags with inline content
 	html = strings.ReplaceAll(html, `<link rel="stylesheet" href="css/styles.css">`, `<style>`+css+`</style>`)
+	html = strings.ReplaceAll(html, `<link rel="stylesheet" href="css/timeline.css">`, `<style>`+timelineCSS+`</style>`)
 	html = strings.ReplaceAll(html, `<script src="js/app.js"></script>`, `<script>`+appJS+`</script>`)
 	html = strings.ReplaceAll(html, `<script src="js/characters.js"></script>`, `<script>`+charactersJS+`</script>`)
 	html = strings.ReplaceAll(html, `<script src="js/panels.js"></script>`, `<script>`+panelsJS+`</script>`)
+	html = strings.ReplaceAll(html, `<script src="js/timeline.js"></script>`, `<script>`+timelineJS+`</script>`)
 	return html
 }
