@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"storyboard_flow/internal/app"
+	"storyboard_flow/internal/app/exporter"
 	"storyboard_flow/internal/models"
 	"storyboard_flow/internal/storage"
 )
@@ -258,4 +260,59 @@ func (h *Handlers) SaveExportHTML(filename, content string) (string, error) {
 	}
 
 	return path, nil
+}
+
+// ExportMP4 exports the current project to an MP4 file and returns the output path.
+// filename may be empty to use a generated name. Optional sizing options can be
+// passed in via width/height/fps/bitrate (0 will use defaults).
+func (h *Handlers) ExportMP4(filename string, width, height, fps, bitrate int) (string, error) {
+	project := h.state.GetProject()
+	if project == nil {
+		return "", fmt.Errorf("no project to export")
+	}
+
+	dir := filepath.FromSlash("assets/exports")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+
+	if filename == "" {
+		ts := time.Now().Format("2006-01-02_15-04-05")
+		filename = fmt.Sprintf("%s_export_%s.mp4", project.Name, ts)
+	}
+
+	safe := filepath.Base(filename)
+	outPath := filepath.Join(dir, safe)
+
+	// Default options
+	opts := exporter.ExportOptions{
+		Width:       1280,
+		Height:      720,
+		FPS:         project.FrameRate,
+		Bitrate:     bitrate,
+		DefaultSecs: 3.0,
+	}
+
+	if width > 0 {
+		opts.Width = width
+	}
+	if height > 0 {
+		opts.Height = height
+	}
+	if fps > 0 {
+		opts.FPS = fps
+	}
+	if opts.FPS == 0 {
+		opts.FPS = 24
+	}
+
+	if bitrate == 0 {
+		opts.Bitrate = 2000
+	}
+
+	if err := exporter.ExportProjectToMP4(project, outPath, opts); err != nil {
+		return "", err
+	}
+
+	return outPath, nil
 }

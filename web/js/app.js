@@ -306,6 +306,24 @@ const app = {
         }
     },
 
+    async exportMp4() {
+        if (!this.currentProject) {
+            alert('No project to export');
+            return;
+        }
+
+        try {
+            // Optionally show a quick confirmation or options in the future
+            const filename = '';
+            // exportMP4 Go binding expects (filename string, width, height, fps, bitrate)
+            // Pass 0 for numeric options to use server-side defaults
+            const result = await exportMP4(filename, 0, 0, 0, 0);
+            alert('Export started. Output: ' + result);
+        } catch (err) {
+            alert('Error exporting MP4: ' + err);
+        }
+    },
+
     async showTimeline() {
         if (typeof Timeline !== 'undefined' && Timeline) {
             await Timeline.show();
@@ -324,6 +342,17 @@ const app = {
 // Initialize app when page loads
 window.addEventListener('DOMContentLoaded', () => {
     app.init();
+    // wire export menu toggle
+    const exportBtn = document.getElementById('exportButton');
+    const menu = document.getElementById('exportMenuItems');
+    if (exportBtn && menu) {
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+        });
+        // close when clicking outside
+        document.addEventListener('click', () => { menu.style.display = 'none'; });
+    }
 });
 
 // Helpers

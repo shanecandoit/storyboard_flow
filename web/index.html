@@ -21,8 +21,16 @@
                 <button onclick="app.renameProject()">Rename Project</button>
                 <span id="projectName" class="project-name"></span>
             </div>
-            <button id="exportButton" class="export-button" onclick="app.exportPdf()">Export</button>
-            <button id="timelineButton" class="export-button" onclick="app.showTimeline()" style="right: 140px;">Timeline</button>
+            <div class="header-actions">
+                <div id="exportMenu" class="export-menu">
+                    <button id="exportButton" class="export-button">Export ▾</button>
+                    <div id="exportMenuItems" class="export-menu-items" style="display:none;">
+                        <button class="export-menu-item" onclick="app.exportPdf()">Export PDF</button>
+                        <button class="export-menu-item" onclick="app.exportMp4()">Export MP4</button>
+                    </div>
+                </div>
+                <button id="timelineButton" class="timeline-button" onclick="app.showTimeline()">Timeline</button>
+            </div>
             <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">light</button>
         </header>
 

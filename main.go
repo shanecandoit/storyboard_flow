@@ -40,6 +40,7 @@ func main() {
 	w.Bind("loadProject", handlers.LoadProject)
 	w.Bind("renameProject", handlers.RenameProject)
 	w.Bind("saveExportHTML", handlers.SaveExportHTML)
+	w.Bind("exportMP4", handlers.ExportMP4)
 	w.Bind("duplicatePanel", handlers.DuplicatePanel)
 	w.Bind("reorderPanel", handlers.ReorderPanel)
 	w.Bind("addCharacter", handlers.AddCharacter)
